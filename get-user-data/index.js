@@ -13,6 +13,7 @@ const datastore = new Datastore({
 });
 let response;
 let orgScopedID;
+let screenName;
 let key;
 
 // Required to support calls from an origin other than the function host
@@ -23,6 +24,7 @@ exports.getUserData = (req, res) => {
         if (!err) {
             response = res;
             orgScopedID = req.query.orgscopedid;
+            screenName = req.query.screenname;
             key = datastore.key(['userData', orgScopedID]);
             checkIfRegistered();
         } else {
@@ -37,7 +39,7 @@ const checkIfRegistered = () => {
             if (entity) {
                 // User exists, send data
                 console.log("User data found: ", entity);
-                response.status(200).send({ message: 'Success', data: entity });
+                checkIfNameChanged(entity);
             } else {
                 createNewUser();
             }
@@ -47,11 +49,35 @@ const checkIfRegistered = () => {
     });
 };
 
+const checkIfNameChanged = (backendEntity) => {
+    if (backendEntity.screenName !== screenName) {
+        // User screen name was changed by Oculus, update it here
+        backendEntity.screenName = screenName;
+        const updatedEntity = {
+            key: key,
+            data: backendEntity
+        };
+        datastore.save(updatedEntity, (err) => {
+            if (!err) {
+                // Updated User screen name, send data
+                console.log("User data saved: ", updatedEntity);
+                response.status(200).send(updatedEntity.data);
+            } else {
+                response.status(500).send("Error saving updated User data: " + err);
+            }
+        });
+
+    } else {
+        // User screen name has not changed, send data
+        response.status(200).send(backendEntity);
+    }
+};
+
 const createNewUser = () => {
     const newUserEntity = {
         key: key,
         data: {
-            screenName: "",
+            screenName: screenName,
             experience: 0,
             level: 1
         }
@@ -59,8 +85,8 @@ const createNewUser = () => {
     datastore.save(newUserEntity, (err) => {
         if (!err) {
             // Created a new User, send data
-            console.log("User data found: ", newUserEntity);
-            response.status(200).send({ message: 'Success', data: newUserEntity.data });
+            console.log("User data saved: ", newUserEntity);
+            response.status(201).send(newUserEntity.data);
         } else {
             response.status(500).send("Error saving new User data: " + err);
         }
