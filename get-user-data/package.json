@@ -1,0 +1,13 @@
+{
+  "name": "prototype-backend-get-user-data",
+  "version": "1.0.0",
+  "description": "Attempts to retrieve logged in User's data from their Oculus org scoped ID. If the data does not exist, a new account will be created.",
+  "main": "index.js",
+  "author": "Zach Miller",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/datastore": "^1.3.3",
+    "@google-cloud/storage": "^1.5.2",
+    "cors": "^2.8.4"
+  }
+}
